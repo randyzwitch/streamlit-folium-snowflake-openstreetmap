@@ -223,7 +223,7 @@ def selector_updated():
     num_rows = st.session_state["num_rows"]
     map_data = st.session_state["map_data"]
 
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=True)
+    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=False)
 
 
 def get_center(map_data: dict = None):
