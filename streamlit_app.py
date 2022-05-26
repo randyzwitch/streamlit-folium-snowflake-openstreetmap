@@ -60,7 +60,7 @@ def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
 
 
-@st.experimental_memo(max_entries=128, show_spinner=True)
+@st.experimental_memo(max_entries=128, show_spinner=False)
 def _get_data(query: str) -> pd.DataFrame:
     df = pd.read_sql(
         query,
@@ -158,7 +158,7 @@ def get_flds_in_table(tbl):
     return df[~df["column_name"].isin(remove_fields)]["column_name"]
 
 
-@st.experimental_memo(show_spinner=True)
+@st.experimental_memo(show_spinner=False)
 def get_fld_values(tbl, col):
 
     df = pd.read_sql(
@@ -195,7 +195,9 @@ def add_data_to_map(geojson_data: dict, map: folium.Map):
     gj.add_to(m)
 
 
-def get_data_from_map_data(map_data: dict, tbl: str, col_selected: str, num_rows: int):
+def get_data_from_map_data(
+    map_data: dict, tbl: str, col_selected: str, num_rows: int, rerun: bool = True
+):
     try:
         coordinates = Coordinates.from_dict(map_data["bounds"])
     except TypeError:
@@ -211,17 +213,17 @@ def get_data_from_map_data(map_data: dict, tbl: str, col_selected: str, num_rows
     st.expander("Show session state").write(st.session_state)
     st.session_state["map_data"] = map_data
 
-    st.experimental_rerun()
+    if rerun:
+        st.experimental_rerun()
 
 
 def selector_updated():
     tbl = st.session_state["table"]
     col_selected = st.session_state["col_selected"]
-    # tags = st.session_state["tags"]
     num_rows = st.session_state["num_rows"]
     map_data = st.session_state["map_data"]
 
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows)
+    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=False)
 
 
 def get_center(map_data: dict = None):
