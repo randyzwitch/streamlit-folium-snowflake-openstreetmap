@@ -294,13 +294,13 @@ if (
 ):
     st.session_state["map_data"] = map_data
 
-st.expander("Show map data").json(map_data)
+# st.expander("Show map data").json(map_data)
 
 if st.session_state["points"].empty:
     get_data_from_map_data(map_data, tbl, col_selected, num_rows)
 
 
-if st.button("Update data"):
+if st.sidebar.button("Update data"):
     get_data_from_map_data(map_data, tbl, col_selected, num_rows)
 
-st.expander("Show session state").write(st.session_state)
+# st.expander("Show session state").write(st.session_state)
