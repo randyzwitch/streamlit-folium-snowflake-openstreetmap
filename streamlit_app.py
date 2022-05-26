@@ -1,13 +1,9 @@
 import json
-
-# from time import sleep
-
 import folium
 import pandas as pd
 import snowflake.connector
 import streamlit as st
 
-# from soupsieve import select
 from streamlit_folium import st_folium
 from constants import COLORS
 from coordinates import Coordinates
@@ -53,9 +49,6 @@ def get_data(
         and st_within(WAY, {polygon})
         limit {num_rows}
         """
-
-    # st.expander("Show query").code(query)
-
     return _get_data(query)
 
 
