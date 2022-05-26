@@ -53,7 +53,7 @@ class Coordinates(NamedTuple):
 
 
 ## functions
-@st.experimental_singleton(show_spinner=False)
+@st.experimental_singleton
 def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
 
@@ -97,7 +97,7 @@ def get_data(
     return _get_data(query)
 
 
-@st.experimental_singleton(show_spinner=False)
+@st.experimental_singleton
 def get_flds_in_table(tbl):
 
     df = pd.read_sql(
@@ -213,8 +213,7 @@ if feature_collection:
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
 
-if "zoom" in map_data:
-    st.session_state["zoom"] = map_data["zoom"]
+st.session_state["map_data"] = map_data
 
 st.expander("Show map data").json(map_data)
 
