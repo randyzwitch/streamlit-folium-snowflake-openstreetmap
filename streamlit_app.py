@@ -58,7 +58,7 @@ def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
 
 
-@st.experimental_memo(max_entries=128, show_spinner=False)
+@st.experimental_memo(max_entries=128, show_spinner=True)
 def _get_data(query: str) -> pd.DataFrame:
     df = pd.read_sql(
         query,
@@ -108,7 +108,7 @@ def get_flds_in_table(tbl):
     return df[~df["column_name"].isin(["OSM_ID", "WAY"])]["column_name"]
 
 
-@st.experimental_memo(show_spinner=False)
+@st.experimental_memo(show_spinner=True)
 def get_fld_values(tbl, col):
 
     df = pd.read_sql(
@@ -164,7 +164,24 @@ num_rows = st.sidebar.select_slider(
     "How many rows?", [10, 100, 1000, 10_000], value=100
 )
 
-m = folium.Map(location=(39.8, -86.1), zoom_start=13)
+zoom = st.session_state.get("map_data", {"zoom": 13})["zoom"]
+
+
+def get_center(map_data: dict = None):
+    if map_data is None:
+        return (39.8, -86.1)
+
+    y1 = float(map_data["bounds"]["_southWest"]["lat"])
+    y2 = float(map_data["bounds"]["_northEast"]["lat"])
+    x1 = float(map_data["bounds"]["_southWest"]["lng"])
+    x2 = float(map_data["bounds"]["_northEast"]["lng"])
+
+    return ((y2 + y1) / 2, (x2 + x1) / 2)
+
+
+location = get_center(st.session_state.get("map_data"))
+
+m = folium.Map(location=location, zoom_start=zoom)
 
 
 def get_feature_collection(df: pd.DataFrame, tags: list) -> dict:
@@ -213,8 +230,6 @@ if feature_collection:
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
 
-st.session_state["map_data"] = map_data
-
 st.expander("Show map data").json(map_data)
 
 
@@ -229,6 +244,9 @@ def get_data_from_map_data(map_data: dict):
         st.session_state["points"] = df
 
     st.expander("Show session state").write(st.session_state)
+    st.session_state["map_data"] = map_data
+
+    st.experimental_rerun()
 
 
 if st.button("Update data"):
