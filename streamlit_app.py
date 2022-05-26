@@ -29,7 +29,7 @@ def _get_data(query: str) -> pd.DataFrame:
 def get_data(
     coordinates: Coordinates,
     table: str = "POINT",
-    tags: str = None,
+    tags: list = None,
     column: str = "ACCESS",
     num_rows: int = 1000,
 ) -> pd.DataFrame:
@@ -42,7 +42,8 @@ def get_data(
 
     polygon = f"st_makepolygon(to_geography('{linestring}'))"
 
-    tag_string = ",".join(f"'{tag}'" for tag in tags)
+    if tags is not None:
+        tag_string = ",".join(f"'{tag}'" for tag in tags)
 
     query = f"""
         select
