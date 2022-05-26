@@ -223,7 +223,7 @@ def selector_updated():
     num_rows = st.session_state["num_rows"]
     map_data = st.session_state["map_data"]
 
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=False)
+    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=True)
 
 
 def get_center(map_data: dict = None):
@@ -333,11 +333,19 @@ if feature_collection:
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
 
-if "map_data" not in st.session_state:
+if (
+    "map_data" not in st.session_state
+    or st.session_state["map_data"]["bounds"]["_southWest"]["lat"] is None
+):
     st.session_state["map_data"] = map_data
 
 st.expander("Show map data").json(map_data)
 
+if st.session_state["points"].empty:
+    get_data_from_map_data(map_data, tbl, col_selected, num_rows)
+
 
 if st.button("Update data"):
     get_data_from_map_data(map_data, tbl, col_selected, num_rows)
+
+st.expander("Show session state").write(st.session_state)
