@@ -46,16 +46,25 @@ def get_data(
         tag_string = ",".join(f"'{tag}'" for tag in tags)
 
     query = f"""
+        with points as (
+            select
+                *
+            from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}
+            where NAME is not null
+            and {column} is not null
+            and st_within(WAY, {polygon})
+            {f"and {column} in ({tag_string})" if tags else ""}
+            limit {num_rows}
+        )
         select
-            *
-        from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}
-        where NAME is not null
-        and {column} is not null
-        and st_within(WAY, {polygon})
-        {f"and {column} in ({tag_string})" if tags else ""}
-        limit {num_rows}
+            st_asgeojson(st_collect(WAY)) as geojson
+        from points
         """
-    return _get_data(query)
+
+    st.expander("Show query").code(query)
+    data = _get_data(query)
+    st.expander("Show data").write(data)
+    return data
 
 
 @st.experimental_singleton
@@ -149,8 +158,10 @@ def get_color(feature: dict) -> dict:
 
 
 def add_data_to_map(geojson_data: dict, map: folium.Map):
-    gj = folium.GeoJson(data=geojson_data, style_function=get_color)
-    folium.GeoJsonPopup(fields=["NAME", col_selected], labels=True).add_to(gj)
+    # gj = folium.GeoJson(data=geojson_data, style_function=get_color)
+    gj = folium.GeoJson(data=geojson_data)
+    # folium.GeoJsonPopup(fields=["NAME", col_selected], labels=True).add_to(gj)
+    # folium.GeoJsonPopup(fields=["NAME", col_selected], labels=True).add_to(gj)
     gj.add_to(m)
 
 
@@ -214,7 +225,11 @@ def get_feature_collection(df: pd.DataFrame, col_selected: str) -> dict:
     if df.empty:
         return {}
 
-    unique_vals = df[col_selected].unique()
+    return df["GEOJSON"].iloc[0]
+
+    unique_vals = ["private", "yes", "no"]
+    # TODO: Fix this!
+    # unique_vals = df[col_selected].unique()
 
     color_map = {val: COLORS[idx % len(COLORS)] for idx, val in enumerate(unique_vals)}
 
@@ -296,6 +311,7 @@ num_rows = st.sidebar.select_slider(
 feature_collection = get_feature_collection(st.session_state["points"], col_selected)
 
 if feature_collection:
+    # st.code(feature_collection)
     add_data_to_map(feature_collection, m)
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
