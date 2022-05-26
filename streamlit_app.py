@@ -9,6 +9,7 @@ import streamlit as st
 from soupsieve import select
 from streamlit_folium import st_folium
 
+st.set_page_config("OpenStreetMap", layout="wide")
 ## constants
 # How many decimals to round to
 ROUND_TO = 1
@@ -105,8 +106,56 @@ def get_flds_in_table(tbl):
         f"show columns in ZWITCH_DEV_WORKSPACE.TESTSCHEMA.planet_osm_{tbl.lower()}",
         conn,
     )
+    remove_fields = [
+        "OSM_ID",
+        "WAY",
+        "ADDR_HOUSENAME",
+        "ADDR_HOUSENUMBER",
+        "ADDR_INTERPOLATION",
+        "POPULATION",
+        "WIDTH",
+        "WOOD",
+        "Z_ORDER",
+        "TAGS",
+        "LAYER",
+        "REF",
+    ]
+    if tbl.lower() == "point":
+        remove_fields.extend(
+            [
+                "AREA",
+                "BRIDGE",
+                "CUTTING",
+                "ELE",
+                "EMBANKMENT",
+                "HARBOUR",
+                "LOCK",
+                "POWER_SOURCE",
+                "ROUTE",
+                "TOLL",
+            ]
+        )
+    elif tbl.lower() == "line":
+        remove_fields.extend(
+            [
+                "AREA",
+                "BRAND",
+                "BUILDING",
+                "DENOMINATION",
+                "HARBOUR",
+                "OFFICE",
+                "POWER_SOURCE",
+                "RELIGION",
+                "SHOP",
+                "TOWER_TYPE",
+            ]
+        )
+    elif tbl.lower() == "polygon":
+        remove_fields.extend(
+            ["CULVERT", "CUTTING", "LOCK", "POWER_SOURCE", "ROUTE", "WAY_AREA"]
+        )
 
-    return df[~df["column_name"].isin(["OSM_ID", "WAY"])]["column_name"]
+    return df[~df["column_name"].isin(remove_fields)]["column_name"]
 
 
 @st.experimental_memo(show_spinner=True)
@@ -114,13 +163,15 @@ def get_fld_values(tbl, col):
 
     df = pd.read_sql(
         f"""
+        select * from (
         select
         {col},
         count(*) as inst
         from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.planet_osm_{tbl}
         where {col} is not NULL
         group by 1
-        order by 2 desc;
+        order by 2 desc)
+        where inst >= 10
         """,
         conn,
     )
@@ -177,12 +228,15 @@ def get_center(map_data: dict = None):
     if map_data is None:
         return (39.8, -86.1)
 
-    y1 = float(map_data["bounds"]["_southWest"]["lat"])
-    y2 = float(map_data["bounds"]["_northEast"]["lat"])
-    x1 = float(map_data["bounds"]["_southWest"]["lng"])
-    x2 = float(map_data["bounds"]["_northEast"]["lng"])
+    try:
+        y1 = float(map_data["bounds"]["_southWest"]["lat"])
+        y2 = float(map_data["bounds"]["_northEast"]["lat"])
+        x1 = float(map_data["bounds"]["_southWest"]["lng"])
+        x2 = float(map_data["bounds"]["_northEast"]["lng"])
 
-    return ((y2 + y1) / 2, (x2 + x1) / 2)
+        return ((y2 + y1) / 2, (x2 + x1) / 2)
+    except (KeyError, TypeError):
+        return (39.8, -86.1)
 
 
 def get_feature_collection(df: pd.DataFrame, tags: list, col_selected: str) -> dict:
@@ -253,7 +307,10 @@ col_selected = st.sidebar.selectbox(
 
 tgs = get_fld_values(tbl, col_selected)
 tags = st.sidebar.multiselect(
-    "3. Choose tags to visualize", tgs, key="tags", on_change=selector_updated
+    "3. Choose tags to visualize",
+    tgs,
+    help="Tags listed by frequency high-to-low",
+    on_change=selector_updated,
 )
 
 num_rows = st.sidebar.select_slider(
