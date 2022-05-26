@@ -1,14 +1,15 @@
 import json
+
 import folium
 import pandas as pd
 import snowflake.connector
 import streamlit as st
-
 from streamlit_folium import st_folium
+
 from constants import COLORS
 from coordinates import Coordinates
 
-st.set_page_config("OpenStreetMap", layout="wide")
+st.set_page_config("OpenStreetMap", layout="wide", page_icon=":world-map:")
 
 ## functions
 @st.experimental_singleton
@@ -28,6 +29,7 @@ def _get_data(query: str) -> pd.DataFrame:
 def get_data(
     coordinates: Coordinates,
     table: str = "POINT",
+    tags: str = None,
     column: str = "ACCESS",
     num_rows: int = 1000,
 ) -> pd.DataFrame:
@@ -40,6 +42,8 @@ def get_data(
 
     polygon = f"st_makepolygon(to_geography('{linestring}'))"
 
+    tag_string = ",".join(f"'{tag}'" for tag in tags)
+
     query = f"""
         select
             *
@@ -47,6 +51,7 @@ def get_data(
         where NAME is not null
         and {column} is not null
         and st_within(WAY, {polygon})
+        {f"and {column} in ({tag_string})" if tags else ""}
         limit {num_rows}
         """
     return _get_data(query)
@@ -149,14 +154,21 @@ def add_data_to_map(geojson_data: dict, map: folium.Map):
 
 
 def get_data_from_map_data(
-    map_data: dict, tbl: str, col_selected: str, num_rows: int, rerun: bool = True
+    map_data: dict,
+    tbl: str,
+    col_selected: str,
+    num_rows: int,
+    tags: list = None,
+    rerun: bool = True,
 ):
     try:
         coordinates = Coordinates.from_dict(map_data["bounds"])
     except TypeError:
         return
 
-    df = get_data(coordinates, column=col_selected, table=tbl, num_rows=num_rows)
+    df = get_data(
+        coordinates, column=col_selected, table=tbl, num_rows=num_rows, tags=tags
+    )
 
     # st.expander("Show data").write(df)
 
@@ -173,10 +185,13 @@ def get_data_from_map_data(
 def selector_updated():
     tbl = st.session_state["table"]
     col_selected = st.session_state["col_selected"]
+    tags = st.session_state["tags"]
     num_rows = st.session_state["num_rows"]
     map_data = st.session_state["map_data"]
 
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows, rerun=False)
+    get_data_from_map_data(
+        map_data, tbl, col_selected, num_rows=num_rows, tags=tags, rerun=False
+    )
 
 
 def get_center(map_data: dict = None):
@@ -194,7 +209,7 @@ def get_center(map_data: dict = None):
         return (39.8, -86.1)
 
 
-def get_feature_collection(df: pd.DataFrame, tags: list, col_selected: str) -> dict:
+def get_feature_collection(df: pd.DataFrame, col_selected: str) -> dict:
     if df.empty:
         return {}
 
@@ -205,9 +220,6 @@ def get_feature_collection(df: pd.DataFrame, tags: list, col_selected: str) -> d
     features: list[dict] = []
 
     for _, point in df.iterrows():
-        if tags and point[col_selected] not in tags:
-            continue
-
         color = color_map[point[col_selected]]
 
         features.append(
@@ -266,6 +278,7 @@ tgs = get_fld_values(tbl, col_selected)
 tags = st.sidebar.multiselect(
     "3. Choose tags to visualize",
     tgs,
+    key="tags",
     help="Tags listed by frequency high-to-low",
     on_change=selector_updated,
 )
@@ -279,9 +292,7 @@ num_rows = st.sidebar.select_slider(
 )
 
 
-feature_collection = get_feature_collection(
-    st.session_state["points"], tags, col_selected
-)
+feature_collection = get_feature_collection(st.session_state["points"], col_selected)
 
 if feature_collection:
     add_data_to_map(feature_collection, m)
@@ -296,11 +307,7 @@ if (
 
 # st.expander("Show map data").json(map_data)
 
-if st.session_state["points"].empty:
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows)
-
-
-if st.sidebar.button("Update data"):
-    get_data_from_map_data(map_data, tbl, col_selected, num_rows)
+if st.sidebar.button("Update data") or st.session_state["points"].empty:
+    get_data_from_map_data(map_data, tbl, col_selected, tags=tags, num_rows=num_rows)
 
 # st.expander("Show session state").write(st.session_state)
