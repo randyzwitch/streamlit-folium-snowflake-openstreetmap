@@ -10,14 +10,40 @@ from streamlit_folium import st_folium
 from constants import COLORS, COLUMN_VALS
 from coordinates import Coordinates
 
+## Set Streamlit app to wide, change title
 st.set_page_config("OpenStreetMap", layout="wide", page_icon=":world-map:")
 
-## functions
+#### functions ####
+## connect to Snowflake
 @st.experimental_singleton
 def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
 
 
+## get all possible values for a given column chosen
+## limiting to more popular ones to avoid one-off and mistake values
+@st.experimental_memo(show_spinner=False)
+def get_fld_values(tbl, col):
+
+    df = pd.read_sql(
+        f"""
+        select * from (
+        select
+        {col},
+        count(*) as inst
+        from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.planet_osm_{tbl}
+        where {col} is not NULL
+        group by 1
+        order by 2 desc)
+        where inst >= 10
+        """,
+        conn,
+    )
+
+    return df[col]
+
+
+## query Snowflake based on Streamlit input widgets
 def get_data(
     coordinates: Coordinates,
     table: str = "POINT",
@@ -75,27 +101,7 @@ def get_data(
     return data
 
 
-@st.experimental_memo(show_spinner=False)
-def get_fld_values(tbl, col):
-
-    df = pd.read_sql(
-        f"""
-        select * from (
-        select
-        {col},
-        count(*) as inst
-        from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.planet_osm_{tbl}
-        where {col} is not NULL
-        group by 1
-        order by 2 desc)
-        where inst >= 10
-        """,
-        conn,
-    )
-
-    return df[col]
-
-
+## from Snowflake query results, add data to Folium map
 def add_data_to_map(geojson_data: str, map: folium.Map, table: str, column: str):
     geojson = json.loads(geojson_data)
 
@@ -123,6 +129,7 @@ def add_data_to_map(geojson_data: str, map: folium.Map, table: str, column: str)
     gj.add_to(map)
 
 
+## take data returned from st_folium to refresh data from Snowflake
 def get_data_from_map_data(
     map_data: dict,
     tbl: str,
@@ -150,6 +157,7 @@ def get_data_from_map_data(
         st.experimental_rerun()
 
 
+## callback function to save the state of various elements
 def selector_updated():
     tbl = st.session_state["table"]
     col_selected = st.session_state["col_selected"]
