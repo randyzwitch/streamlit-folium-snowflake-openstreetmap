@@ -6,7 +6,7 @@ import snowflake.connector
 import streamlit as st
 from streamlit_folium import st_folium
 
-from constants import COLORS
+from constants import COLORS, COLUMN_VALS
 from coordinates import Coordinates
 
 st.set_page_config("OpenStreetMap", layout="wide", page_icon=":world-map:")
@@ -66,65 +66,6 @@ def get_data(
     data = _get_data(query)
     st.expander("Show data").write(data)
     return data
-
-
-@st.experimental_singleton
-def get_flds_in_table(tbl):
-
-    df = pd.read_sql(
-        f"show columns in ZWITCH_DEV_WORKSPACE.TESTSCHEMA.planet_osm_{tbl.lower()}",
-        conn,
-    )
-    remove_fields = [
-        "OSM_ID",
-        "WAY",
-        "ADDR_HOUSENAME",
-        "ADDR_HOUSENUMBER",
-        "ADDR_INTERPOLATION",
-        "POPULATION",
-        "WIDTH",
-        "WOOD",
-        "Z_ORDER",
-        "TAGS",
-        "LAYER",
-        "REF",
-    ]
-    if tbl.lower() == "point":
-        remove_fields.extend(
-            [
-                "AREA",
-                "BRIDGE",
-                "CUTTING",
-                "ELE",
-                "EMBANKMENT",
-                "HARBOUR",
-                "LOCK",
-                "POWER_SOURCE",
-                "ROUTE",
-                "TOLL",
-            ]
-        )
-    elif tbl.lower() == "line":
-        remove_fields.extend(
-            [
-                "AREA",
-                "BRAND",
-                "BUILDING",
-                "DENOMINATION",
-                "HARBOUR",
-                "OFFICE",
-                "POWER_SOURCE",
-                "RELIGION",
-                "SHOP",
-                "TOWER_TYPE",
-            ]
-        )
-    elif tbl.lower() == "polygon":
-        remove_fields.extend(
-            ["CULVERT", "CUTTING", "LOCK", "POWER_SOURCE", "ROUTE", "WAY_AREA"]
-        )
-
-    return df[~df["column_name"].isin(remove_fields)]["column_name"]
 
 
 @st.experimental_memo(show_spinner=False)
@@ -217,7 +158,7 @@ def get_center(map_data: dict = None):
         return (39.8, -86.1)
 
 
-def get_feature_collection(df: pd.DataFrame, col_selected: str) -> str:
+def get_feature_collection(df: pd.DataFrame) -> str:
     if df.empty:
         return "{}"
 
@@ -250,9 +191,11 @@ tbl = st.sidebar.selectbox(
     on_change=selector_updated,
 )
 
-flds = get_flds_in_table(tbl)
 col_selected = st.sidebar.selectbox(
-    "2. Choose a column", flds, key="col_selected", on_change=selector_updated
+    "2. Choose a column",
+    COLUMN_VALS[tbl.lower()],
+    key="col_selected",
+    on_change=selector_updated,
 )
 
 tgs = get_fld_values(tbl, col_selected)
@@ -273,7 +216,7 @@ num_rows = st.sidebar.select_slider(
 )
 
 
-feature_collection = get_feature_collection(st.session_state["points"], col_selected)
+feature_collection = get_feature_collection(st.session_state["points"])
 
 if feature_collection:
     add_data_to_map(feature_collection, m)
