@@ -1,4 +1,4 @@
-import json
+from typing import Optional
 
 import folium
 import pandas as pd
@@ -6,7 +6,7 @@ import snowflake.connector
 import streamlit as st
 from streamlit_folium import st_folium
 
-from constants import COLORS, COLUMN_VALS
+from constants import COLUMN_VALS
 from coordinates import Coordinates
 
 st.set_page_config("OpenStreetMap", layout="wide", page_icon=":world-map:")
@@ -158,9 +158,9 @@ def get_center(map_data: dict = None):
         return (39.8, -86.1)
 
 
-def get_feature_collection(df: pd.DataFrame) -> str:
+def get_feature_collection(df: pd.DataFrame) -> Optional[str]:
     if df.empty:
-        return "{}"
+        return None
 
     geojson_str = df["GEOJSON"].iloc[0]
 
