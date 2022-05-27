@@ -43,6 +43,7 @@ def get_data(
     polygon = f"st_makepolygon(to_geography('{linestring}'))"
 
     if tags is not None:
+        tags = [tag.replace("'", "''") for tag in tags]
         tag_string = ",".join(f"'{tag}'" for tag in tags)
 
     # In order to store and keep properties around, manually construct json, rather than
