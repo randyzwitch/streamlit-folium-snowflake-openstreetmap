@@ -45,10 +45,14 @@ def get_data(
     if tags is not None:
         tag_string = ",".join(f"'{tag}'" for tag in tags)
 
+    # In order to store and keep properties around, manually construct json, rather than
+    # using st_collect
     query = f"""
         with points as (
             select
-                WAY
+                NAME,
+                {column},
+                object_construct('type', 'Feature', 'geometry', ST_ASGEOJSON(WAY), 'properties', object_construct('name', NAME, '{column}', {column})) as geojson_obj
             from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}
             where NAME is not null
             and {column} is not null
@@ -56,9 +60,10 @@ def get_data(
             {f"and {column} in ({tag_string})" if tags else ""}
             limit {num_rows}
         )
+
         select
-            st_collect(WAY) as geojson
-        from points
+            object_construct('type', 'FeatureCollection', 'features', array_agg(geojson_obj)) as geojson
+        from points;
         """
 
     print(query)
@@ -163,6 +168,8 @@ def get_feature_collection(df: pd.DataFrame) -> Optional[str]:
         return None
 
     geojson_str = df["GEOJSON"].iloc[0]
+
+    print(geojson_str)
 
     return geojson_str
 
