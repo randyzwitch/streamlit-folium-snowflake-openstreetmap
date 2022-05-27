@@ -1,5 +1,4 @@
 import json
-import time
 from typing import Optional
 
 import folium
@@ -105,7 +104,7 @@ def get_fld_values(tbl, col):
     return df[col]
 
 
-def add_data_to_map(geojson_data: str, map: folium.Map, col_selected: str):
+def add_data_to_map(geojson_data: str, map: folium.Map, table: str, column: str):
     geojson = json.loads(geojson_data)
 
     unique_vals = set(
@@ -115,19 +114,20 @@ def add_data_to_map(geojson_data: str, map: folium.Map, col_selected: str):
     color_map = {val: COLORS[idx % len(COLORS)] for idx, val in enumerate(unique_vals)}
 
     for feature in geojson["features"]:
-        feature["properties"]["color"] = color_map[feature["properties"][col_selected]]
+        feature["properties"]["color"] = color_map[feature["properties"][column]]
 
     def get_color(feature: dict) -> dict:
-        return {
-            #'fillColor': '#ffaf00',
+        styles = {
             "color": feature["properties"]["color"],
-            # "fillColor": feature["properties"]["color"],
-            #'weight': 1.5,
-            #'dashArray': '5, 5'
+            "fillColor": feature["properties"]["color"],
         }
+        if table == "Point":
+            styles["weight"] = 10
 
-    gj = folium.GeoJson(data=geojson, style_function=get_color)
-    folium.GeoJsonPopup(fields=["NAME", col_selected], labels=True).add_to(gj)
+        return styles
+
+    gj = folium.GeoJson(data=geojson, style_function=get_color, marker=folium.Circle())
+    folium.GeoJsonPopup(fields=["NAME", column], labels=True).add_to(gj)
     gj.add_to(map)
 
 
@@ -246,7 +246,7 @@ num_rows = st.sidebar.select_slider(
 feature_collection = get_feature_collection(st.session_state["points"])
 
 if feature_collection:
-    add_data_to_map(feature_collection, m, col_selected)
+    add_data_to_map(feature_collection, m, table=tbl, column=col_selected)
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
 
