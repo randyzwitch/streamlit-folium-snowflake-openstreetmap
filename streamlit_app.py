@@ -52,7 +52,7 @@ def get_data(
             select
                 NAME,
                 {column},
-                object_construct('type', 'Feature', 'geometry', ST_ASGEOJSON(WAY), 'properties', object_construct('name', NAME, '{column}', {column})) as geojson_obj
+                object_construct('type', 'Feature', 'geometry', ST_ASGEOJSON(WAY), 'properties', object_construct('NAME', NAME, '{column}', {column})) as geojson_obj
             from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}
             where NAME is not null
             and {column} is not null
@@ -104,8 +104,9 @@ def get_color(feature: dict) -> dict:
     }
 
 
-def add_data_to_map(geojson_data: str, map: folium.Map):
+def add_data_to_map(geojson_data: str, map: folium.Map, col_selected: str):
     gj = folium.GeoJson(data=geojson_data)
+    folium.GeoJsonPopup(fields=["NAME", col_selected], labels=True).add_to(gj)
     gj.add_to(map)
 
 
@@ -226,7 +227,7 @@ num_rows = st.sidebar.select_slider(
 feature_collection = get_feature_collection(st.session_state["points"])
 
 if feature_collection:
-    add_data_to_map(feature_collection, m)
+    add_data_to_map(feature_collection, m, col_selected)
 
 map_data = st_folium(m, width=1000, key="hard_coded_key")
 
