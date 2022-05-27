@@ -162,21 +162,6 @@ def selector_updated():
     )
 
 
-def get_center(map_data: dict = None):
-    if map_data is None:
-        return (39.8, -86.1)
-
-    try:
-        y1 = float(map_data["bounds"]["_southWest"]["lat"])
-        y2 = float(map_data["bounds"]["_northEast"]["lat"])
-        x1 = float(map_data["bounds"]["_southWest"]["lng"])
-        x2 = float(map_data["bounds"]["_northEast"]["lng"])
-
-        return ((y2 + y1) / 2, (x2 + x1) / 2)
-    except (KeyError, TypeError):
-        return (39.8, -86.1)
-
-
 def get_feature_collection(df: pd.DataFrame) -> Optional[str]:
     if df.empty:
         return None
@@ -186,19 +171,18 @@ def get_feature_collection(df: pd.DataFrame) -> Optional[str]:
     return geojson_str
 
 
-if "points" not in st.session_state:
-    st.session_state["points"] = pd.DataFrame()
-
-
 ## streamlit app code below
 "### 🗺️ OpenStreetMap - North America"
 
 conn = sfconn()
 
+# initialize starting values
 zoom = st.session_state.get("map_data", {"zoom": 13})["zoom"]
+location = Coordinates.get_center(st.session_state.get("map_data"))
 
+if "points" not in st.session_state:
+    st.session_state["points"] = pd.DataFrame()
 
-location = get_center(st.session_state.get("map_data"))
 
 m = folium.Map(location=location, zoom_start=zoom)
 
