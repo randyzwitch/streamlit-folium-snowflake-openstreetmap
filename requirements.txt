@@ -1,4 +1,4 @@
 streamlit==1.9
 snowflake-connector-python==2.7.7
-streamlit-folium
+streamlit-folium>=0.6.12
 folium
