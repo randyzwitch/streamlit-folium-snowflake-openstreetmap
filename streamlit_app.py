@@ -62,9 +62,9 @@ def get_data(
         """
 
     print(query)
-    st.expander("Show query").code(query)
+    # st.expander("Show query").code(query)
     data = _get_data(query)
-    st.expander("Show data").write(data)
+    # st.expander("Show data").write(data)
     return data
 
 
