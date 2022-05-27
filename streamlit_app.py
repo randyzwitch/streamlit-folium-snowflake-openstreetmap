@@ -18,15 +18,6 @@ def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
 
 
-@st.experimental_memo(max_entries=128, show_spinner=False)
-def _get_data(query: str) -> pd.DataFrame:
-    df = pd.read_sql(
-        query,
-        conn,
-    )
-    return df
-
-
 def get_data(
     coordinates: Coordinates,
     table: str = "POINT",
@@ -78,7 +69,8 @@ def get_data(
 
     print(query)
     # st.expander("Show query").code(query)
-    data = _get_data(query)
+
+    data = pd.read_sql(query, conn)
     # st.expander("Show data").write(data)
     return data
 
