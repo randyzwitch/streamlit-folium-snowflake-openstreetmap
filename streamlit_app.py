@@ -132,7 +132,7 @@ def add_data_to_map(geojson_data: dict, map: folium.Map, table: str, column: str
 ## connect to snowflake
 conn = sfconn()
 
-# put sidebar widgets up as high as possible in code to avoid flickering
+## put sidebar widgets up as high as possible in code to avoid flickering
 tbl = st.sidebar.selectbox(
     "1. Choose a geometry type",
     ["Point", "Line", "Polygon"],
@@ -162,7 +162,7 @@ num_rows = st.sidebar.select_slider(
 
 ## figure out key of automatically written state
 ## this is slightly hacky
-autostate = sorted(list(st.session_state.keys()), key=len)[-1]
+autostate = sorted(st.session_state.keys(), key=len)[-1]
 
 ## initialize starting value of zoom if it doesn't exist
 ## otherwise, get it from session_state
