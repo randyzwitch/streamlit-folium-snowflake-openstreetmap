@@ -207,7 +207,14 @@ num_rows = st.sidebar.select_slider(
 
 ## initialize starting values, create map
 zoom = st.session_state.get("map_data", {"zoom": 13})["zoom"]
-location = Coordinates.get_center(st.session_state.get("map_data"))
+
+try:
+    center = st.session_state["map_data"]["center"]
+except KeyError:
+    center = {"lat": 39.8, "lng": -86.1}
+
+location = center["lat"], center["lng"]
+
 m = folium.Map(location=location, zoom_start=zoom)
 
 ## if data is available, plot it
