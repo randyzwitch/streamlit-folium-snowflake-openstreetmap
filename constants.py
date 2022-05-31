@@ -1,5 +1,5 @@
 # How many decimals to round to
-ROUND_TO = 1
+ROUND_TO = 2
 
 COLORS = [
     "red",
