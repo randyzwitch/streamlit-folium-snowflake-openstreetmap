@@ -1,5 +1,5 @@
 import json
-from typing import cast
+from typing import Optional, cast
 
 import folium
 import pandas as pd
@@ -192,19 +192,58 @@ def get_order(key) -> int:
 ## this is slightly hacky
 autostate = cast(str, sorted(st.session_state.keys(), key=get_order)[-1])
 
+
+def get_capital_data(capital: str) -> Optional[dict]:
+    if capital == "--NONE--":
+        return None
+
+    df = state_capitals()
+    location = json.loads(df[df["NAME"] == capital]["LOCATION"].iloc[0])["coordinates"]
+    center = {
+        "lat": location[1],
+        "lng": location[0],
+    }
+    zoom = 11
+
+    return {
+        "center": center,
+        "zoom": zoom,
+    }
+
+
+capitals = ["--NONE--"] + list(state_capitals()["NAME"].values)
+
+
+def clear_state():
+    del st.session_state[autostate]
+
+
+capital = st.sidebar.selectbox(
+    "Zoom to capital?", options=capitals, key="capital", on_change=clear_state
+)
+
+capital_data = get_capital_data(capital)
+
 ## initialize starting value of zoom if it doesn't exist
 ## otherwise, get it from session_state
 try:
     zoom = st.session_state[autostate]["zoom"]
 except (TypeError, KeyError):
-    zoom = 4
+    if capital_data is None:
+        zoom = 4
+    else:
+        zoom = capital_data["zoom"]
+
 
 ## initialize starting value of center if it doesn't exist
 ## otherwise, get it from session_state
 try:
     center = st.session_state[autostate]["center"]
 except (TypeError, KeyError):
-    center = {"lat": 37.97, "lng": -96.12}
+    if capital_data is None:
+        center = {"lat": 37.97, "lng": -96.12}
+    else:
+        center = capital_data["center"]
 
 
 "### 🗺️ OpenStreetMap - North America"
@@ -233,29 +272,3 @@ add_data_to_map(st.session_state["features"], m, table=tbl, column=col_selected)
 
 ## display map on app
 map_data = st_folium(m, width=1000)
-
-
-def zoom_to_capital():
-    selected_capital = st.session_state["capital"]
-    if selected_capital == "--NONE--":
-        return
-
-    df = state_capitals()
-    location = json.loads(df[df["NAME"] == selected_capital]["LOCATION"].iloc[0])[
-        "coordinates"
-    ]
-    st.session_state[autostate]["center"] = {
-        "lat": location[1],
-        "lng": location[0],
-    }
-    st.session_state[autostate]["zoom"] = 11
-
-
-capitals = ["--NONE--"] + list(state_capitals()["NAME"].values)
-
-selected = st.sidebar.selectbox(
-    "Zoom to capital?",
-    options=capitals,
-    key="capital",
-    on_change=zoom_to_capital,
-)
