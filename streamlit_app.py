@@ -31,7 +31,7 @@ def state_capitals() -> pd.DataFrame:
         from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_POINT
         where CAPITAL = '4'
         order by name
-    """,
+        """,
         conn,
     )
     return df
@@ -182,10 +182,11 @@ num_rows = st.sidebar.select_slider(
 
 
 def get_order(key) -> int:
-    if st.session_state[key] is not None:
-        return len(str(key))
     # Don't ever sort by keys with None as their value
-    return -1
+    if st.session_state[key] is None:
+        return -1
+
+    return len(str(key))
 
 
 ## figure out key of automatically written state
@@ -257,8 +258,8 @@ try:
 except TypeError:
     coordinates = Coordinates.from_dict(
         {
-            "_southWest": {"lat": 10.290060240659766, "lng": -140.07046669721603},
-            "_northEast": {"lat": 58.15737472780594, "lng": -52.17984169721604},
+            "_southWest": {"lat": 10.31491928581316, "lng": -140.09765625000003},
+            "_northEast": {"lat": 58.17070248348609, "lng": -52.20703125000001},
         }
     )
 
