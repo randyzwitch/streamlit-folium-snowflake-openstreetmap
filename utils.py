@@ -1,9 +1,12 @@
+## base python libraries
 from typing import Optional
 import json
 
+## pip installed libraries
 import folium
 import streamlit as st
 
+## repo-local code
 from constants import COLORS
 from sfdb import state_capitals
 

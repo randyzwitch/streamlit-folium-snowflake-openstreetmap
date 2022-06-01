@@ -1,8 +1,13 @@
-from coordinates import Coordinates
-import pandas as pd
+## base python libraries
 import json
+
+## pip installed libraries
+import pandas as pd
 import streamlit as st
 import snowflake.connector
+
+## repo-local code
+from coordinates import Coordinates
 
 ## connect to Snowflake
 @st.experimental_singleton
