@@ -1,5 +1,5 @@
 import json
-from typing import Optional, cast
+from typing import cast
 
 import folium
 import pandas as pd
@@ -18,6 +18,23 @@ st.set_page_config("OpenStreetMap", layout="wide", page_icon=":world-map:")
 @st.experimental_singleton
 def sfconn():
     return snowflake.connector.connect(**st.secrets["sfdevrel"])
+
+
+## Get the list of points with CAPITAL = 4 (state capitals)
+@st.experimental_singleton
+def state_capitals() -> pd.DataFrame:
+    df = pd.read_sql(
+        """
+        select
+            name,
+            way as location
+        from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_POINT
+        where CAPITAL = '4'
+        order by name
+    """,
+        conn,
+    )
+    return df
 
 
 ## get all possible values for a given column chosen
@@ -120,6 +137,9 @@ def add_data_to_map(geojson_data: dict, map: folium.Map, table: str, column: str
 
         return styles
 
+    if len(geojson_data["features"]) == 0:
+        return
+
     gj = folium.GeoJson(
         data=geojson_data, style_function=get_color, marker=folium.Circle()
     )
@@ -213,3 +233,29 @@ add_data_to_map(st.session_state["features"], m, table=tbl, column=col_selected)
 
 ## display map on app
 map_data = st_folium(m, width=1000)
+
+
+def zoom_to_capital():
+    selected_capital = st.session_state["capital"]
+    if selected_capital == "--NONE--":
+        return
+
+    df = state_capitals()
+    location = json.loads(df[df["NAME"] == selected_capital]["LOCATION"].iloc[0])[
+        "coordinates"
+    ]
+    st.session_state[autostate]["center"] = {
+        "lat": location[1],
+        "lng": location[0],
+    }
+    st.session_state[autostate]["zoom"] = 11
+
+
+capitals = ["--NONE--"] + list(state_capitals()["NAME"].values)
+
+selected = st.sidebar.selectbox(
+    "Zoom to capital?",
+    options=capitals,
+    key="capital",
+    on_change=zoom_to_capital,
+)
