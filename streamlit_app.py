@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Optional, cast
 
 import folium
 import pandas as pd
@@ -160,19 +160,32 @@ num_rows = st.sidebar.select_slider(
     key="num_rows",
 )
 
+
+def get_order(key) -> int:
+    if st.session_state[key] is not None:
+        return len(str(key))
+    # Don't ever sort by keys with None as their value
+    return -1
+
+
 ## figure out key of automatically written state
 ## this is slightly hacky
-autostate = sorted(st.session_state.keys(), key=len)[-1]
+autostate = cast(str, sorted(st.session_state.keys(), key=get_order)[-1])
 
 ## initialize starting value of zoom if it doesn't exist
 ## otherwise, get it from session_state
-zoom = st.session_state.get(autostate, {"zoom": 4})["zoom"]
+try:
+    zoom = st.session_state[autostate]["zoom"]
+except (TypeError, KeyError):
+    zoom = 4
 
 ## initialize starting value of center if it doesn't exist
 ## otherwise, get it from session_state
-center = st.session_state.get(autostate, {"center": {"lat": 37.97, "lng": -96.12}})[
-    "center"
-]
+try:
+    center = st.session_state[autostate]["center"]
+except (TypeError, KeyError):
+    center = {"lat": 37.97, "lng": -96.12}
+
 
 "### 🗺️ OpenStreetMap - North America"
 
@@ -180,9 +193,9 @@ center = st.session_state.get(autostate, {"center": {"lat": 37.97, "lng": -96.12
 m = folium.Map(location=(center["lat"], center["lng"]), zoom_start=zoom)
 
 ## defines initial case, prior to map being rendered
-if autostate in st.session_state and len(autostate) == 64:
+try:
     coordinates = Coordinates.from_dict(st.session_state[autostate]["bounds"])
-else:
+except TypeError:
     coordinates = Coordinates.from_dict(
         {
             "_southWest": {"lat": 10.290060240659766, "lng": -140.07046669721603},
