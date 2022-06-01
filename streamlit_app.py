@@ -63,7 +63,7 @@ capital = st.sidebar.selectbox(
 st.sidebar.write("---")  ## visual divider between less important input
 num_rows = st.sidebar.select_slider(
     "Maximum number of rows",
-    [100, 1000, 10_000, 100_000],
+    [100, 1000, 10_000, 100_000, 1_000_000],
     value=1000,
     key="num_rows",
 )
