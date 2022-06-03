@@ -1,13 +1,15 @@
 ## base python libraries
 import json
+from textwrap import dedent
 
 ## pip installed libraries
 import pandas as pd
-import streamlit as st
 import snowflake.connector
+import streamlit as st
 
 ## repo-local code
 from coordinates import Coordinates
+
 
 ## connect to Snowflake
 @st.experimental_singleton(show_spinner=False)
@@ -64,9 +66,11 @@ def get_feature_collection(
         select
             object_construct('type', 'FeatureCollection', 'features', array_agg(geojson_obj)) as geojson
         from points;
-        """
+    """
 
     data = pd.read_sql(query, _conn)
+
+    st.sidebar.expander("Show generated query").code(dedent(query))
 
     return json.loads(data["GEOJSON"].iloc[0])
 
