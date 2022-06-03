@@ -1,6 +1,6 @@
 ## base python libraries
-from typing import Optional
 import json
+from typing import Optional
 
 ## pip installed libraries
 import folium
@@ -9,6 +9,7 @@ import streamlit as st
 ## repo-local code
 from constants import COLORS
 from sfdb import state_capitals
+
 
 ## from Snowflake query results, add data to Folium map
 def add_data_to_map(
@@ -39,7 +40,9 @@ def add_data_to_map(
     gj = folium.GeoJson(
         data=geojson_data, style_function=get_color, marker=folium.Circle()
     )
-    folium.GeoJsonPopup(fields=["NAME", column], labels=True).add_to(gj)
+    folium.GeoJsonPopup(fields=["NAME", column, "TAGS", "OSM_ID"], labels=True).add_to(
+        gj
+    )
     gj.add_to(map)
 
 

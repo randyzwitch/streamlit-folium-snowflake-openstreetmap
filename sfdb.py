@@ -48,13 +48,16 @@ def get_feature_collection(
             select
                 NAME,
                 {column},
+                TAGS,
                 object_construct(
                     'type', 'Feature',
                     'geometry', ST_ASGEOJSON(WAY),
                     'properties',
                         object_construct(
                             'NAME', NAME,
-                            '{column}', {column}
+                            '{column}', {column},
+                            'TAGS', SUBSTRING(TAGS, 0, 512),
+                            'OSM_ID', OSM_ID
                         )
                 ) as geojson_obj
             from {table}
