@@ -75,7 +75,11 @@ def get_feature_collection(
 
     data = pd.read_sql(query, _conn)
 
-    st.sidebar.expander("Show generated query").code(dedent(query), language="sql")
+    end = time()
+
+    st.sidebar.expander("Show generated query").code(
+        dedent(query).replace("  ", " "), language="sql"
+    )
 
     geojson_data = json.loads(data["GEOJSON"].iloc[0])
 
