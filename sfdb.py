@@ -1,6 +1,7 @@
 ## base python libraries
 import json
 from textwrap import dedent
+from time import time
 
 ## pip installed libraries
 import pandas as pd
@@ -41,6 +42,7 @@ def get_feature_collection(
 
     # In order to store and keep properties around, manually construct json, rather than
     # using st_collect
+    table = f"ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}".upper()
     query = f"""
         with points as (
             select
@@ -55,7 +57,7 @@ def get_feature_collection(
                             '{column}', {column}
                         )
                 ) as geojson_obj
-            from ZWITCH_DEV_WORKSPACE.TESTSCHEMA.PLANET_OSM_{table}
+            from {table}
             where NAME is not null
             and {column} is not null
             and st_within(WAY, {polygon})
@@ -68,11 +70,29 @@ def get_feature_collection(
         from points;
     """
 
+    start = time()
+
     data = pd.read_sql(query, _conn)
 
-    st.sidebar.expander("Show generated query").code(dedent(query))
+    end = time()
 
-    return json.loads(data["GEOJSON"].iloc[0])
+    st.sidebar.expander("Show generated query").code(dedent(query), language="sql")
+
+    geojson_data = json.loads(data["GEOJSON"].iloc[0])
+
+    n_rows = len(geojson_data["features"])
+
+    st.sidebar.write(
+        f"""
+    Table: `{table}`
+
+    Rows returned: {n_rows}
+
+    Query time: {end - start:.2}s
+    """
+    )
+
+    return geojson_data
 
 
 ## Get the list of points with CAPITAL = 4 (state capitals)
