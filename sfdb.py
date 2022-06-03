@@ -88,7 +88,7 @@ def get_feature_collection(
 
     Rows returned: {n_rows}
 
-    Query time: {end - start:.2}s
+    Response time: {end - start:.2}s
     """
     )
 
